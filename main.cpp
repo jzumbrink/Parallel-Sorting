@@ -2,8 +2,11 @@
 #include <random>
 #include <vector>
 #include <algorithm>
-#include "sequential_quicksort.hpp"
+#include <chrono>
+#include <omp.h>
 #include "insertion_sort.hpp"
+#include "parallel_quicksort.hpp"
+#include "sequential_quicksort.hpp"
 
 void print_example(std::vector<double> &v) {
     std::cout << "Example" << std::endl;
@@ -35,14 +38,29 @@ int main() {
         e = dist(gen);
     }
 
-    //print_example(v);
+    auto start = std::chrono::high_resolution_clock::now();
 
-    quick_sort(v.begin(), v.end(), std::less<>{});
+    parallel_quicksort(v.begin(), v.end(), std::less<>{}, 0);
 
-    //print_example(v);
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
     const bool sorted = is_sorted(v.begin(), v.end(), std::less<>{});
     std::cout << "Elements are sorted: " << std::boolalpha << sorted << std::endl;
+    std::cout << "Execution time sequential quicksort: " << duration.count() / 1000 << " ms (" << duration.count() << " microseconds)" << std::endl;
+
+#pragma omp parallel sections
+    {
+#pragma omp section
+        {
+            printf ("id = %d, \n", omp_get_thread_num());
+        }
+#pragma omp section
+        {
+            printf ("id = %d, \n", omp_get_thread_num());
+        }
+    }
 
     return 0;
 }

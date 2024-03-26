@@ -1,3 +1,5 @@
+#pragma once
+
 template <class It, class Comp>
 It partition_vector(It begin, It end, Comp comp) {
     auto pivot = *(begin);
