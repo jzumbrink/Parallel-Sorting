@@ -2,11 +2,10 @@
 #include <random>
 #include <vector>
 #include <algorithm>
-#include <chrono>
-#include <omp.h>
 #include "insertion_sort.hpp"
 #include "parallel_quicksort.hpp"
 #include "sequential_quicksort.hpp"
+#include "evaluate.hpp"
 
 void print_example(std::vector<double> &v) {
     std::cout << "Example" << std::endl;
@@ -33,34 +32,28 @@ int main() {
     std::default_random_engine gen(r());
     std::uniform_real_distribution<double> dist;
 
-    std::vector<double> v(n);
-    for (double& e: v) {
+    std::vector<double> original_v(n);
+    for (double& e: original_v) {
         e = dist(gen);
     }
 
-    auto start = std::chrono::high_resolution_clock::now();
+    std::vector<double> v(original_v);
 
-    parallel_quicksort(v.begin(), v.end(), std::less<>{}, 0);
+    evaluate_sorting_algorithm("std::sort", std::sort, v.begin(), v.end(), std::less<>{});
 
-    auto stop = std::chrono::high_resolution_clock::now();
+    if (n <= 20000) {
+        std::copy(original_v.begin(), original_v.end(), v.begin());
 
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-
-    const bool sorted = is_sorted(v.begin(), v.end(), std::less<>{});
-    std::cout << "Elements are sorted: " << std::boolalpha << sorted << std::endl;
-    std::cout << "Execution time sequential quicksort: " << duration.count() / 1000 << " ms (" << duration.count() << " microseconds)" << std::endl;
-
-#pragma omp parallel sections
-    {
-#pragma omp section
-        {
-            printf ("id = %d, \n", omp_get_thread_num());
-        }
-#pragma omp section
-        {
-            printf ("id = %d, \n", omp_get_thread_num());
-        }
+        evaluate_sorting_algorithm("insertion sort", insertion_sort, v.begin(), v.end(), std::less<>{});
     }
+
+    std::copy(original_v.begin(), original_v.end(), v.begin());
+
+    evaluate_sorting_algorithm("sequential quicksort", quick_sort, v.begin(), v.end(), std::less<>{});
+
+    std::copy(original_v.begin(), original_v.end(), v.begin());
+
+    evaluate_sorting_algorithm("parallel quicksort", parallel_quicksort_entry, v.begin(), v.end(), std::less<>{});
 
     return 0;
 }
